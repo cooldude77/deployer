@@ -7,14 +7,14 @@
 
 namespace Deployer;
 
-use Deployer\Console\InitCommand;
-use Deployer\Console\WorkerCommand;
+use Deployer\Collection;
 use Deployer\Console\Application;
+use Deployer\Console\InitCommand;
+use Deployer\Console\TaskCommand;
+use Deployer\Console\WorkerCommand;
 use Deployer\Server;
 use Deployer\Stage\StageStrategy;
 use Deployer\Task;
-use Deployer\Collection;
-use Deployer\Console\TaskCommand;
 use Symfony\Component\Console;
 
 /**
@@ -57,6 +57,9 @@ class Deployer
      */
     private $stageStrategy;
 
+    const REPOSITORY_MERCURIAL = "mercurial";
+    const REPOSITORY_GIT = "git";
+
     /**
      * @param Application $console
      * @param Console\Input\InputInterface $input
@@ -94,7 +97,7 @@ class Deployer
     public function run()
     {
         $this->addConsoleCommands();
-        
+
         $this->console->add(new WorkerCommand($this));
         $this->console->add(new InitCommand());
 
@@ -107,12 +110,12 @@ class Deployer
     public function addConsoleCommands()
     {
         $this->console->addUserArgumentsAndOptions();
-        
+
         foreach ($this->tasks as $name => $task) {
             if ($task->isPrivate()) {
                 continue;
             }
-            
+
             $this->console->add(new TaskCommand($name, $task->getDescription(), $this));
         }
     }

@@ -8,6 +8,8 @@
 /**
  * Common parameters.
  */
+use Deployer\vcs\Mercurial;
+
 set('keep_releases', 3);
 set('shared_dirs', []);
 set('shared_files', []);
@@ -28,7 +30,7 @@ env('env_vars', ''); // For Composer installation. Like SYMFONY_ENV=prod
 env('composer_options', 'install --no-dev --verbose --prefer-dist --optimize-autoloader --no-progress --no-interaction');
 env('git_cache', function () { //whether to use git cache - faster cloning by borrowing objects from existing clones.
     $gitVersion = run('git version');
-    $regs       = [];
+    $regs = [];
     if (preg_match('/((\d+\.?)+)/', $gitVersion, $regs)) {
         $version = $regs[1];
     } else {
@@ -142,6 +144,13 @@ task('deploy:release', function () {
  */
 task('deploy:update_code', function () {
     $repository = get('repository');
+    $repositoryType = get('repository_type');
+
+    if ($repositoryType == \Deployer\Deployer::REPOSITORY_MERCURIAL) {
+        $mercurial = new Mercurial();
+        $mercurial->updateCode();
+        return;
+    }
     $branch = env('branch');
     $gitCache = env('git_cache');
     $depth = $gitCache ? '' : '--depth 1';
@@ -259,7 +268,7 @@ task('deploy:writable', function () {
                 }
 
                 run("$sudo chmod +a \"`whoami` allow delete,write,append,file_inherit,directory_inherit\" $dirs");
-            // Try linux ACL implementation with unsafe fail-fallback to POSIX-way
+                // Try linux ACL implementation with unsafe fail-fallback to POSIX-way
             } elseif (commandExist('setfacl')) {
                 if (!empty($httpUser)) {
                     if (!empty($sudo)) {
@@ -284,7 +293,7 @@ task('deploy:writable', function () {
                 } else {
                     run("$sudo chmod 777 -R $dirs");
                 }
-            // If we are not on OS-X and have no ACL installed use POSIX
+                // If we are not on OS-X and have no ACL installed use POSIX
             } else {
                 run("$sudo chmod 777 -R $dirs");
             }
@@ -310,8 +319,8 @@ task('deploy:writable', function () {
  */
 task('deploy:vendors', function () {
     $composer = get('composer_command');
-    
-    if (! commandExist($composer)) {
+
+    if (!commandExist($composer)) {
         run("cd {{release_path}} && curl -sS https://getcomposer.org/installer | php");
         $composer = 'php composer.phar';
     }
@@ -408,7 +417,7 @@ task('cleanup', function () {
  */
 task('deploy:clean', function () {
     $paths = get('clear_paths');
-    $sudo  = get('clear_use_sudo') ? 'sudo' : '';
+    $sudo = get('clear_use_sudo') ? 'sudo' : '';
 
     foreach ($paths as $path) {
         run("$sudo rm -rf {{deploy_path}}/$path");
