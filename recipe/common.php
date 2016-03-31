@@ -8,7 +8,6 @@
 /**
  * Common parameters.
  */
-use Deployer\vcs\Mercurial;
 
 set('keep_releases', 3);
 set('shared_dirs', []);
@@ -143,14 +142,7 @@ task('deploy:release', function () {
  * Update project code
  */
 task('deploy:update_code', function () {
-    $repository = get('repository');
-    $repositoryType = get('repository_type');
 
-    if ($repositoryType == \Deployer\Deployer::REPOSITORY_MERCURIAL) {
-        $mercurial = new Mercurial();
-        $mercurial->updateCode();
-        return;
-    }
     $branch = env('branch');
     $gitCache = env('git_cache');
     $depth = $gitCache ? '' : '--depth 1';
@@ -170,22 +162,41 @@ task('deploy:update_code', function () {
 
     $releases = env('releases_list');
 
-    if (!empty($revision)) {
-        // To checkout specified revision we need to clone all tree.
-        run("git clone $at --recursive -q $repository {{release_path}} 2>&1");
-        run("cd {{release_path}} && git checkout $revision");
-    } elseif ($gitCache && isset($releases[1])) {
-        try {
-            run("git clone $at --recursive -q --reference {{deploy_path}}/releases/{$releases[1]} --dissociate $repository  {{release_path}} 2>&1");
-        } catch (RuntimeException $exc) {
-            // If {{deploy_path}}/releases/{$releases[1]} has a failed git clone, is empty, shallow etc, git would throw error and give up. So we're forcing it to act without reference in this situation
-            run("git clone $at --recursive -q $repository {{release_path}} 2>&1");
-        }
-    } else {
-        // if we're using git cache this would be identical to above code in catch - full clone. If not, it would create shallow clone.
-        run("git clone $at $depth --recursive -q $repository {{release_path}} 2>&1");
-    }
+    // shell_exec("ssh -T hg@bitbucket.org");
 
+    $repository = get('repository');
+    $repositoryType = get('repository_type');
+
+    if ($repositoryType == \Deployer\Deployer::REPOSITORY_MERCURIAL) {
+        if (!empty($revision)) {
+            $command = "hg clone $repository -r $revision {{release_path}}";
+        } else {
+            $command = "hg clone $repository  {{release_path}}";
+        }
+        $command = env()->parse($command);
+
+        echo $command;
+
+        shell_exec($command);
+
+    } elseif ($repositoryType == \Deployer\Deployer::REPOSITORY_GIT) {
+        if (!empty($revision)) {
+            // To checkout specified revision we need to clone all tree.
+            run("git clone $at --recursive -q $repository {{release_path}} 2>&1");
+            run("cd {{release_path}} && git checkout $revision");
+        } elseif ($gitCache && isset($releases[1])) {
+            try {
+                run("git clone $at --recursive -q --reference {{deploy_path}}/releases/{$releases[1]} --dissociate $repository  {{release_path}} 2>&1");
+            } catch (RuntimeException $exc) {
+                // If {{deploy_path}}/releases/{$releases[1]} has a failed git clone, is empty, shallow etc, git would throw error and give up. So we're forcing it to act without reference in this situation
+                run("git clone $at --recursive -q $repository {{release_path}} 2>&1");
+            }
+        } else {
+            // if we're using git cache this would be identical to above code in catch - full clone. If not, it would create shallow clone.
+            run("git clone $at $depth --recursive -q $repository {{release_path}} 2>&1");
+        }
+
+    }
 })->desc('Updating code');
 
 /**

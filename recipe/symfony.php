@@ -111,6 +111,17 @@ task('deploy:clear_controllers', function () {
 
 after('deploy:update_code', 'deploy:clear_controllers');
 
+/**
+ * Change permission of app.php files
+ */
+task('deploy:set_permissions', function () {
+
+    run("chmod 755 {{release_path}}/web");
+    run("chmod 755 {{release_path}}/web/app.php");
+})->setPrivate();
+
+after('deploy:update_code', 'deploy:set_permissions');
+
 
 /**
  * Main task
