@@ -144,8 +144,6 @@ task('deploy:release', function () {
 task('deploy:update_code', function () {
 
     $branch = env('branch');
-    $gitCache = env('git_cache');
-    $depth = $gitCache ? '' : '--depth 1';
 
     if (input()->hasOption('tag')) {
         $tag = input()->getOption('tag');
@@ -153,12 +151,6 @@ task('deploy:update_code', function () {
         $revision = input()->getOption('revision');
     }
 
-    $at = '';
-    if (!empty($tag)) {
-        $at = "-b $tag";
-    } elseif (!empty($branch)) {
-        $at = "-b $branch";
-    }
 
     $releases = env('releases_list');
 
@@ -170,9 +162,14 @@ task('deploy:update_code', function () {
     if ($repositoryType == \Deployer\Deployer::REPOSITORY_MERCURIAL) {
         if (!empty($revision)) {
             $command = "hg clone $repository -r $revision {{release_path}}";
+        } elseif ($branch != null) {
+            $command = "hg clone $repository -r $branch {{release_path}}";
+        } elseif ($tag != null) {
+            $command = "hg clone $repository -r $tag {{release_path}}";
         } else {
-            $command = "hg clone $repository  {{release_path}}";
+            $command = "hg clone $repository {{release_path}}";
         }
+
         $command = env()->parse($command);
 
         echo $command;
@@ -180,6 +177,17 @@ task('deploy:update_code', function () {
         shell_exec($command);
 
     } elseif ($repositoryType == \Deployer\Deployer::REPOSITORY_GIT) {
+        $gitCache = env('git_cache');
+        $depth = $gitCache ? '' : '--depth 1';
+
+        $at = '';
+        if (!empty($tag)) {
+            $at = "-b $tag";
+        } elseif (!empty($branch)) {
+            $at = "-b $branch";
+        }
+
+
         if (!empty($revision)) {
             // To checkout specified revision we need to clone all tree.
             run("git clone $at --recursive -q $repository {{release_path}} 2>&1");
