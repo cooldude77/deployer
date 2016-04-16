@@ -161,7 +161,7 @@ task('deploy:update_code', function () {
 
     if ($repositoryType == \Deployer\Deployer::REPOSITORY_MERCURIAL) {
 
-        $interactive = input()->hasOption('interactive') && input()->getOption('interactive') == true ? true : false;
+        $interactive = get('interactive') == true ? true : false;
 
         if ($interactive == true) {
 
