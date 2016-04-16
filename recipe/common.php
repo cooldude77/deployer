@@ -143,8 +143,8 @@ task('deploy:release', function () {
  */
 task('deploy:update_code', function () {
 
+    // Keep these here for git if condition
     $branch = env('branch');
-
     if (input()->hasOption('tag')) {
         $tag = input()->getOption('tag');
     } elseif (input()->hasOption('revision')) {
@@ -160,14 +160,31 @@ task('deploy:update_code', function () {
     $repositoryType = get('repository_type');
 
     if ($repositoryType == \Deployer\Deployer::REPOSITORY_MERCURIAL) {
-        if (!empty($revision)) {
-            $command = "hg clone $repository -r $revision {{release_path}}";
-        } elseif ($branch != null) {
-            $command = "hg clone $repository -r $branch {{release_path}}";
-        } elseif ($tag != null) {
-            $command = "hg clone $repository -r $tag {{release_path}}";
+
+        $interactive = input()->hasOption('interactive') && input()->getOption('interactive') == true ? true : false;
+
+        if ($interactive == true) {
+
+            do {
+                $tag_branch_or_rev = strtolower(trim(prompt("Which one to choose , Revision (r), branches (b) or Tag(t) ( default tag ) :?"));
+                if (in_array($tag_branch_or_rev, array("b", "r", "t"))) {
+                    $rev = prompt("Please enter a tag to clone: ");
+                    break;
+                }
+
+            } while (1);
+
+            $command = "hg clone -r $rev $repository {{release_path}}";
         } else {
-            $command = "hg clone $repository {{release_path}}";
+            if (!empty($revision)) {
+                $command = "hg clone -r $revision $repository  {{release_path}}";
+            } elseif ($branch != null) {
+                $command = "hg clone -r $branch $repository  {{release_path}}";
+            } elseif ($tag != null) {
+                $command = "hg clone -r $tag $repository  {{release_path}}";
+            } else {
+                $command = "hg clone $repository {{release_path}}";
+            }
         }
 
         $command = env()->parse($command);

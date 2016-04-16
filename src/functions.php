@@ -334,7 +334,7 @@ function runLocally($command, $timeout = 60)
     if (!$process->isSuccessful()) {
         throw new \RuntimeException($process->getErrorOutput());
     }
-    
+
     return new Result($process->getOutput());
 }
 
@@ -587,4 +587,18 @@ function env($name = null, $value = null)
 function commandExist($command)
 {
     return run("if hash $command 2>/dev/null; then echo 'true'; fi")->toBool();
+}
+
+/**
+ * @param string $promptText
+ * @return string
+ */
+function prompt($promptText)
+{
+    echo $promptText;
+    $handle = fopen("php://stdin", "r");
+    $output = trim(fgets($handle));
+    fclose($handle);
+    return $output;
+
 }
