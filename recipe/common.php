@@ -166,7 +166,7 @@ task('deploy:update_code', function () {
         if ($interactive == true) {
 
             do {
-                $tag_branch_or_rev = strtolower(trim(prompt("Which one to choose , Revision (r), branches (b) or Tag(t) ( default tag ) :?"));
+                $tag_branch_or_rev = strtolower(trim(prompt("Which one to choose , Revision (r), branches (b) or Tag(t) ( default tag ) :?")));
                 if (in_array($tag_branch_or_rev, array("b", "r", "t"))) {
                     $rev = prompt("Please enter a tag to clone: ");
                     break;
